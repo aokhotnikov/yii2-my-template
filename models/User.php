@@ -2,52 +2,133 @@
 
 namespace app\models;
 
-class User extends \yii\base\Object implements \yii\web\IdentityInterface
+use Yii;
+use yii\behaviors\TimestampBehavior;
+use yii\db\ActiveRecord;
+use yii\db\Expression;
+
+/**
+ * This is the model class for table "users".
+ *
+ * @property integer $id
+ * @property string $username
+ * @property string $password
+ * @property string $email
+ * @property string $status
+ * @property string $auth_key
+ * @property string $token
+ * @property integer $isAdmin
+ * @property string $activation_token
+ * @property string $activation_at
+ * @property string $password_reset_token
+ * @property string $password_reset_at
+ * @property string $created_at
+ * @property string $updated_at
+ */
+class User extends ActiveRecord implements \yii\web\IdentityInterface
 {
-    public $id;
-    public $username;
-    public $password;
-    public $authKey;
-    public $accessToken;
-
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
-
+    const STATUS_NEW = 'new';
+    const STATUS_ACTIVATED = 'activated';
+    const STATUS_BANNED = 'banned';
 
     /**
      * @inheritdoc
      */
-    public static function findIdentity($id)
+    public static function tableName()
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        return 'users';
     }
 
     /**
      * @inheritdoc
      */
-    public static function findIdentityByAccessToken($token, $type = null)
+    public function rules()
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
+        return [
+            [['username', 'password', 'email', 'auth_key'], 'required'],
+            [['status'], 'string'],
+            [['isAdmin'], 'integer'],
+            [['activation_at', 'password_reset_at', 'created_at', 'updated_at'], 'safe'],
+            [['username', 'password', 'email', 'token', 'activation_token', 'password_reset_token'], 'string', 'max' => 255],
+            [['auth_key'], 'string', 'max' => 32],
+            [['username'], 'unique'],
+            [['email'], 'unique'],
+            [['token'], 'unique'],
+            [['activation_token'], 'unique'],
+            [['password_reset_token'], 'unique'],
+        ];
+    }
 
-        return null;
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'username' => 'Username',
+            'password' => 'Password',
+            'email' => 'Email',
+            'status' => 'Status',
+            'auth_key' => 'Auth Key',
+            'token' => 'Token',
+            'isAdmin' => 'Is Admin',
+            'activation_token' => 'Activation Token',
+            'activation_at' => 'Activation At',
+            'password_reset_token' => 'Password Reset Token',
+            'password_reset_at' => 'Password Reset At',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+        ];
+    }
+
+//  ---------------------------------------------  Поведения -------------------------------------------
+    public function behaviors()
+    {
+        return [
+            [
+                // Генерит поля created_at и updated_at
+                'class' => TimestampBehavior::className(),
+                'value' => new Expression('NOW()'),   // for mysql
+            ],
+        ];
+    }
+
+//  ----------------------------------------------  Хелперы ---------------------------------------------
+    public function generateActivationToken()
+    {
+        $this->activation_token = Yii::$app->security->generateRandomString().'_'.time();
+    }
+    /**
+     * Generates password hash from password and sets it to the model
+     *
+     * @param string $password
+     */
+    public function setPassword($password)
+    {
+        $this->password = Yii::$app->security->generatePasswordHash($password);
+    }
+
+    /**
+     * Генерирует случайную строку из 32 шестнадцатеричных символов и присваивает (при записи) полученное значение полю auth_key
+     * таблицы user для нового пользователя.
+     * Вызывается из модели SignupForm.
+     */
+    public function generateAuthKey()
+    {
+        $this->auth_key = Yii::$app->security->generateRandomString();
+    }
+
+    /**
+     * Сравнивает полученный пароль с паролем в поле password_hash, для текущего пользователя, в таблице user.
+     * Вызывается из модели LoginForm.
+     *
+     * @param string $password password to validate
+     * @return bool if password provided is valid for current user
+     */
+    public function validatePassword($password)
+    {
+        return Yii::$app->security->validatePassword($password, $this->password);
     }
 
     /**
@@ -58,13 +139,24 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public static function findByUsername($username)
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
+        return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVATED]);
+    }
 
-        return null;
+//  -----------------------------------------  IdentityInterface  -----------------------------------------
+    /**
+     * @inheritdoc
+     */
+    public static function findIdentity($id)
+    {
+        return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVATED]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function findIdentityByAccessToken($token, $type = null)
+    {
+        return static::findOne(['token' => $token]);
     }
 
     /**
@@ -80,7 +172,7 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public function getAuthKey()
     {
-        return $this->authKey;
+        return $this->auth_key;
     }
 
     /**
@@ -88,17 +180,6 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public function validateAuthKey($authKey)
     {
-        return $this->authKey === $authKey;
-    }
-
-    /**
-     * Validates password
-     *
-     * @param string $password password to validate
-     * @return bool if password provided is valid for current user
-     */
-    public function validatePassword($password)
-    {
-        return $this->password === $password;
+        return $this->auth_key === $authKey;
     }
 }
