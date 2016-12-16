@@ -12,6 +12,10 @@ $config = [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'XPAxxaysi57xhDLq1RE101CYctel7EFF',
         ],
+        'formatter' => [
+            //'locale' => 'uk-UA', // language locale
+            'defaultTimeZone' => 'Europe/Kiev', // time zone
+        ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],

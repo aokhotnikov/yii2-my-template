@@ -6,6 +6,7 @@ use Yii;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\db\Expression;
+use yii\helpers\VarDumper;
 
 /**
  * This is the model class for table "users".
@@ -99,6 +100,19 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface
     {
         $this->activation_token = Yii::$app->security->generateRandomString().'_'.time();
     }
+
+    public function generatePasswordResetToken()
+    {
+        $this->password_reset_token = Yii::$app->security->generateRandomString();
+        $this->touch('password_reset_at'); // touch - TimestampBehavior assign the current timestamp to the specified attribute and save them to the database
+    }
+
+    public function removePasswordResetToken()
+    {
+        $this->password_reset_token = null;
+        $this->password_reset_at = null;
+    }
+
     /**
      * Generates password hash from password and sets it to the model
      *
@@ -140,6 +154,33 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface
     public static function findByUsername($username)
     {
         return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVATED]);
+    }
+
+    /**
+     * Finds user by password_reset_token
+     *
+     * @param string $key
+     * @return static|null
+     */
+    public static function findByPasswordResetToken($key)
+    {
+        $user = static::findOne(['password_reset_token' => $key]);
+        //VarDumper::dump($user, 10, true);die;       // for debug
+        return static::isSecretKeyExpire($key, $user->password_reset_at) ? $user : null;
+    }
+
+    public static function isSecretKeyExpire($key, $password_reset_at)
+    {
+        if (empty($key)) {
+            return false;
+        }
+        $expire = Yii::$app->params['secretKeyExpire'];
+        $timestamp = Yii::$app->formatter->asTimestamp($password_reset_at);
+        //echo $timestamp;
+        //echo '<br>';
+        //echo Yii::$app->formatter->asDatetime('now', 'Y-MM-dd H:i:s');
+        //;die;       // for debug
+        return $timestamp + $expire >= time();
     }
 
 //  -----------------------------------------  IdentityInterface  -----------------------------------------
