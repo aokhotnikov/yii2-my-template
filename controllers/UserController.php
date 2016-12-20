@@ -1,6 +1,7 @@
 <?php
 namespace app\controllers;
 
+use app\components\Helpers;
 use app\models\LoginForm;
 use app\models\ResetPasswordForm;
 use app\models\SendEmailForm;
@@ -49,7 +50,7 @@ class UserController extends BehaviorsController
                     return $this->goHome();
                 }
             } else {
-                Yii::$app->session->setFlash('error', 'Возникла ошибка при регистрации пользователя');
+                Helpers::showNotify('Возникла ошибка при регистрации пользователя', 'danger', true, 'glyphicon-warning-sign');
                 Yii::error('Ошибка при регистрации');
                 return $this->refresh();
             }
@@ -77,10 +78,11 @@ class UserController extends BehaviorsController
         if ($model->load(Yii::$app->request->post())) {
             if ($model->validate()) {
                 if($model->sendEmail()) {
-                    Yii::$app->session->setFlash('warning', 'Проверьте емайл.');
+                    // Создание уведомления с минимальными параметрами
+                    Helpers::showNotify('Проверьте ваш Email', 'info', true, 'glyphicon-envelope');
                     return $this->goHome();
                 } else {
-                    Yii::$app->session->setFlash('error', 'Нельзя сбросить пароль.');
+                    Helpers::showNotify('Нельзя сбросить пароль', 'warning');
                 }
             }
         }
@@ -99,7 +101,7 @@ class UserController extends BehaviorsController
         }
         if ($model->load(Yii::$app->request->post())) {
             if ($model->validate() && $model->resetPassword()) {
-                Yii::$app->session->setFlash('warning', 'Пароль изменен.');
+                Helpers::showNotify('Пароль изменен');
                 return $this->redirect(['/user/login']);
             }
         }
