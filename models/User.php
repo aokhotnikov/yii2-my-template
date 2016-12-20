@@ -176,11 +176,7 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface
         }
         $expire = Yii::$app->params['secretKeyExpire'];
         $timestamp = Yii::$app->formatter->asTimestamp($password_reset_at);
-        //echo $timestamp;
-        //echo '<br>';
-        //echo Yii::$app->formatter->asDatetime('now', 'Y-MM-dd H:i:s');
-        //;die;       // for debug
-        return $timestamp + $expire >= time();
+        return ($timestamp + $expire) >= time();
     }
 
 //  -----------------------------------------  IdentityInterface  -----------------------------------------

@@ -14,7 +14,8 @@ class ResetPasswordForm extends Model
     public function rules()
     {
         return [
-            ['password', 'required']
+            ['password', 'required'],
+            ['password', 'string', 'min' => 3, 'max' => 255]
         ];
     }
 
@@ -31,7 +32,7 @@ class ResetPasswordForm extends Model
             throw new InvalidParamException('Ключ не может быть пустым.');
         $this->_user = User::findByPasswordResetToken($key);
         if(!$this->_user)
-            throw new InvalidParamException('Не верный ключ.');
+            throw new InvalidParamException('Неверный ключ.');
         parent::__construct($config);
     }
 
