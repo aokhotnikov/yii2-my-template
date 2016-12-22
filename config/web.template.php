@@ -14,7 +14,7 @@ $config = [
         ],
         'formatter' => [
             //'locale' => 'uk-UA', // language locale
-            'defaultTimeZone' => 'Europe/Kiev', // time zone
+            'timeZone' => 'Europe/Kiev', // time zone
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
