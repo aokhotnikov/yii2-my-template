@@ -1,6 +1,7 @@
 <?php
 namespace app\models;
 
+use Yii;
 use yii\base\Model;
 
 
@@ -76,5 +77,14 @@ class SignupForm extends Model
 
         //echo '<pre>';print_r($this);echo '</pre>';die;
         return $user->save() ? $user : null;
+    }
+
+    public function sendActivationEmail($user)
+    {
+        return Yii::$app->mailer->compose('activationEmail', ['user' => $user])
+            ->setFrom([Yii::$app->params['adminEmail'] => Yii::$app->name.' (отправлено роботом).'])
+            ->setTo($this->email)
+            ->setSubject('Активация для '.Yii::$app->name)
+            ->send();
     }
 }

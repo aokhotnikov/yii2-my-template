@@ -98,7 +98,14 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface
 //  ----------------------------------------------  Хелперы ---------------------------------------------
     public function generateActivationToken()
     {
-        $this->activation_token = Yii::$app->security->generateRandomString().'_'.time();
+        $this->activation_token = Yii::$app->security->generateRandomString();
+        $this->activation_at = Yii::$app->formatter->asDatetime(time());
+    }
+
+    public function removeActivationToken()
+    {
+        $this->activation_token = null;
+        $this->activation_at = null;
     }
 
     public function generatePasswordResetToken()
@@ -167,6 +174,19 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface
         $user = static::findOne(['password_reset_token' => $key]);
         //VarDumper::dump($user, 10, true);die;       // for debug
         return static::isSecretKeyExpire($key, $user->password_reset_at) ? $user : null;
+    }
+
+    /**
+     * Finds user by activation_token
+     *
+     * @param string $key
+     * @return static|null
+     */
+    public static function findByActivationToken($key)
+    {
+        $user = static::findOne(['activation_token' => $key]);
+        //VarDumper::dump($user, 10, true);die;       // for debug
+        return static::isSecretKeyExpire($key, $user->activation_at) ? $user : null;
     }
 
     public static function isSecretKeyExpire($key, $password_reset_at)

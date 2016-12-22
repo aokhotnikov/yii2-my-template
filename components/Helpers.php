@@ -18,7 +18,7 @@ class Helpers
     static function showNotify($message, $type = 'success', $customMessage = false, $icon = 'glyphicon-ok')
     {
         if (!$customMessage) {
-
+            // Создание уведомления с минимальными параметрами
             Yii::$app->session->set('message', [
                 'type' => $type,
                 'message' => $message,

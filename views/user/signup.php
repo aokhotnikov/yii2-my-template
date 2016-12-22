@@ -32,6 +32,10 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
 
             <?php ActiveForm::end(); ?>
+
+            <?php if ($model->scenario === 'emailActivation'): ?>
+                <i>*На указанный емайл будет отправлено письмо для активации аккаунта.</i>
+            <?php endif; ?>
         </div>
     </div>
 </div>
